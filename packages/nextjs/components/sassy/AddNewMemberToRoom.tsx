@@ -15,11 +15,14 @@ const AddNewMemberToRoom = () => {
   });
 
   return (
-    <div>
-      <AddressInput onChange={setAddress} value={address} placeholder="Input your address" />
-      <button className="btn btn-sm btn-primary" onClick={() => writeAsync()}>
-        add
-      </button>
+    <div className="card w-full md:w-1/2 bg-base-100 shadow-xl">
+      <div className="card-body">
+        <h2 className="card-title">Add new participant!</h2>
+        <AddressInput onChange={setAddress} value={address} placeholder="Input your address" />
+        <button className="btn btn-sm btn-primary" onClick={() => writeAsync()}>
+          add
+        </button>
+      </div>
     </div>
   );
 };

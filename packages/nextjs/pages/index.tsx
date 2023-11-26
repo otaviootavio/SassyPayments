@@ -22,10 +22,8 @@ const Home: NextPage = () => {
   return (
     <>
       <MetaHeader />
-      <div className="flex items-center flex-col flex-grow pt-10">
-        <div className="flex flex-row gap-2 w-full max-w-7xl pb-1 px-6 lg:px-10 flex-wrap">
-          <CreateRoom />
-        </div>
+      <div className="flex flex-col md:flex-row gap-4 p-4">
+        <CreateRoom />
       </div>
     </>
   );

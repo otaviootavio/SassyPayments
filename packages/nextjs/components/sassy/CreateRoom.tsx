@@ -16,11 +16,14 @@ const CreateRoom = () => {
   const roomId = nextRoomIdResponse as any;
 
   return (
-    <div>
-      <button className="btn btn-sm btn-primary" onClick={() => createRoomAsync?.()}>
-        Create room
-      </button>
-      <div>Current room id: {displayTxResult(roomId)}</div>
+    <div className="w-full md:w-1/2 bg-base-100 shadow-xl">
+      <div className="card-body">
+        <h2 className="card-title">Create room</h2>
+        <div>Current room id: {displayTxResult(roomId)}</div>
+        <button className="btn btn-sm btn-primary" onClick={() => createRoomAsync?.()}>
+          Create room!
+        </button>
+      </div>
     </div>
   );
 };

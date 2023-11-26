@@ -1,6 +1,7 @@
 /* eslint-disable  @typescript-eslint/no-explicit-any */
 import React from "react";
 import { useRouter } from "next/router";
+import { Address } from "../scaffold-eth";
 import { useAccount } from "wagmi";
 import { useScaffoldContractRead } from "~~/hooks/scaffold-eth";
 
@@ -30,26 +31,39 @@ const RoomDetails = () => {
   const RoomAddresses = roomDetailsResponse[2] as any;
 
   return (
-    <div>
-      <div>
-        <b>My: isParticipant</b> = {participantDetails[0].toString()}
+    <>
+      <div className="card w-full md:w-1/2 bg-base-100 shadow-xl">
+        <div className="card-body">
+          <h2 className="card-title">My Details</h2>
+          <div>
+            <b>Is Participant:</b> {participantDetails[0].toString()}
+          </div>
+          <div>
+            <b>Balance:</b> {participantDetails[1].toString()}
+          </div>
+        </div>
       </div>
-      <div>
-        <b>My: balance</b> = {participantDetails[1].toString()}
+      <div className="card w-full md:w-1/2 bg-base-100 shadow-xl">
+        <div className="card-body">
+          <h2 className="card-title">Room Details</h2>
+          <div>
+            <b>Owner:</b>
+            <Address address={roomDetailsResponse[0].toString()} />
+          </div>
+          <div>
+            <b>Is Open:</b> {roomDetailsResponse[1].toString()}
+          </div>
+          <div>
+            <b>Participants:</b>
+            {RoomAddresses.map((str: string, index: number) => (
+              <div key={index} className="badge badge-outline mt-2">
+                <Address disableAddressLink={true} format="short" address={str} />
+              </div>
+            ))}
+          </div>
+        </div>
       </div>
-      <div>
-        <b>Room: owner</b> {roomDetailsResponse[0].toString()}
-      </div>
-      <div>
-        <b>Room: is open</b> {roomDetailsResponse[1].toString()}
-      </div>
-      <div>
-        <b>Room: participants</b>{" "}
-        {RoomAddresses.map((str: string, index: number) => (
-          <div key={index}>{str}</div>
-        ))}
-      </div>
-    </div>
+    </>
   );
 };
 
