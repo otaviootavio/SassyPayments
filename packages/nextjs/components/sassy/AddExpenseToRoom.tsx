@@ -14,7 +14,7 @@ const AddExpenseToRoom = () => {
   const { writeAsync } = useScaffoldContractWrite({
     contractName: "SharedExpenses",
     functionName: "addExpense",
-    args: [BigInt(room_id), BigInt(ammount), [borrower]],
+    args: [BigInt(room_id), BigInt(ammount) * BigInt(10 ** 18), [borrower]],
   });
 
   return (

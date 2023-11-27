@@ -39,7 +39,7 @@ const RoomDetails = () => {
             <b>Is Participant:</b> {participantDetails[0].toString()}
           </div>
           <div>
-            <b>Balance:</b> {participantDetails[1].toString()}
+            <b>Balance:</b> {(participantDetails[1] / BigInt(10 ** 18)).toString()} ETH
           </div>
         </div>
       </div>
