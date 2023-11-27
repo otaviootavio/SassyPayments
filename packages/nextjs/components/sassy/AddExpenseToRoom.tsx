@@ -1,12 +1,13 @@
 import React, { useState } from "react";
 import { useRouter } from "next/router";
 import { AddressInput, EtherInput } from "../scaffold-eth";
+import { parseEther } from "viem";
 import { useScaffoldContractWrite } from "~~/hooks/scaffold-eth";
 
 const AddExpenseToRoom = () => {
-  const [ammount, setAmmount] = useState<string>("");
-  const [payer, setPayer] = useState<string>("");
-  const [borrower, setBorrower] = useState<string>("");
+  const [ammount, setAmmount] = useState<string>("0");
+  const [payer, setPayer] = useState<string>("0");
+  const [borrower, setBorrower] = useState<string>("0");
 
   const router = useRouter();
   const room_id: string = router.query.id ? router.query.id[0] : "0";
@@ -14,7 +15,7 @@ const AddExpenseToRoom = () => {
   const { writeAsync } = useScaffoldContractWrite({
     contractName: "SharedExpenses",
     functionName: "addExpense",
-    args: [BigInt(room_id), BigInt(ammount) * BigInt(10 ** 18), [borrower]],
+    args: [BigInt(room_id), parseEther(ammount), [borrower]],
   });
 
   return (

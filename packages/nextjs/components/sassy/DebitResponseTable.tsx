@@ -37,7 +37,7 @@ const DebitResponseTable = () => {
             <thead>
               <tr>
                 <th>Debtor</th>
-                <th>Amount</th>
+                <th>Amount (ETH)</th>
                 <th>Creditors</th>
               </tr>
             </thead>

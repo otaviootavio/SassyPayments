@@ -2,8 +2,20 @@
 import React from "react";
 import { useRouter } from "next/router";
 import { Address } from "../scaffold-eth";
+import { formatEther } from "viem";
 import { useAccount } from "wagmi";
 import { useScaffoldContractRead } from "~~/hooks/scaffold-eth";
+
+type GetParticipantDetailsResponse = {
+  isParticipant: boolean;
+  balance: bigint;
+};
+
+type GetRoomDetailsResponse = {
+  owner: string;
+  isOpen: boolean;
+  participantList: string[];
+};
 
 const RoomDetails = () => {
   const router = useRouter();
@@ -23,12 +35,12 @@ const RoomDetails = () => {
     args: [BigInt(room_id), accountState.address],
   });
 
-  if (!getParticipantDetailsResponse || !getRoomDetailsResponse) {
+  const participantDetails = parseToGetParticipantDetailsResponse(getParticipantDetailsResponse as any);
+  const roomDetailsResponse = parseToGetRoomDetailsResponse(getRoomDetailsResponse as any);
+
+  if (!participantDetails || !roomDetailsResponse) {
     return <>Loading...</>;
   }
-  const participantDetails = getParticipantDetailsResponse as any;
-  const roomDetailsResponse = getRoomDetailsResponse as any;
-  const RoomAddresses = roomDetailsResponse[2] as any;
 
   return (
     <>
@@ -36,10 +48,10 @@ const RoomDetails = () => {
         <div className="card-body">
           <h2 className="card-title">My Details</h2>
           <div>
-            <b>Is Participant:</b> {participantDetails[0].toString()}
+            <b>Is Participant:</b> {participantDetails.isParticipant.toString()}
           </div>
           <div>
-            <b>Balance:</b> {(participantDetails[1] / BigInt(10 ** 18)).toString()} ETH
+            <b>Balance:</b> {formatEther(participantDetails.balance, "wei").substring(0, 6)} ETH
           </div>
         </div>
       </div>
@@ -48,14 +60,14 @@ const RoomDetails = () => {
           <h2 className="card-title">Room Details</h2>
           <div>
             <b>Owner:</b>
-            <Address address={roomDetailsResponse[0].toString()} />
+            <Address address={roomDetailsResponse.owner} />
           </div>
           <div>
-            <b>Is Open:</b> {roomDetailsResponse[1].toString()}
+            <b>Is Open:</b> {roomDetailsResponse.isOpen.toString()}
           </div>
           <div>
             <b>Participants:</b>
-            {RoomAddresses.map((str: string, index: number) => (
+            {roomDetailsResponse.participantList.map((str: string, index: number) => (
               <div key={index} className="badge badge-outline mt-2">
                 <Address disableAddressLink={true} format="short" address={str} />
               </div>
@@ -66,5 +78,55 @@ const RoomDetails = () => {
     </>
   );
 };
+
+function parseToGetRoomDetailsResponse(input: any): GetRoomDetailsResponse | null {
+  try {
+    if (typeof input !== "object" || input === null) {
+      throw new Error("Input is not an object.");
+    }
+
+    const [owner, isOpen, participantList] = input;
+
+    if (typeof owner !== "string") {
+      throw new Error("owner is not a string.");
+    }
+
+    if (typeof isOpen !== "boolean") {
+      throw new Error("isOpen is not a boolean.");
+    }
+
+    if (!Array.isArray(participantList) || !participantList.every(item => typeof item === "string")) {
+      throw new Error("participantList is not an array of strings.");
+    }
+
+    return { owner, isOpen, participantList };
+  } catch (error) {
+    console.error("Error parsing GetRoomDetailsResponse:", error);
+    return null;
+  }
+}
+
+function parseToGetParticipantDetailsResponse(input: any): GetParticipantDetailsResponse | null {
+  try {
+    if (typeof input !== "object" || input === null) {
+      throw new Error("Input is not an object.");
+    }
+
+    const [isParticipant, balance] = input;
+
+    if (typeof isParticipant !== "boolean") {
+      throw new Error("isParticipant is not a boolean.");
+    }
+
+    if (typeof balance !== "bigint") {
+      throw new Error("balance is not a bigint.");
+    }
+
+    return { isParticipant, balance };
+  } catch (error) {
+    console.error("Error parsing GetParticipantDetailsResponse:", error);
+    return null;
+  }
+}
 
 export default RoomDetails;

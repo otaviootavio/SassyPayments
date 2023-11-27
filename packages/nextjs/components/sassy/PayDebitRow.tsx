@@ -1,6 +1,7 @@
 import React from "react";
 import { useRouter } from "next/router";
 import { Address } from "../scaffold-eth";
+import { formatEther } from "viem";
 import { useWalletClient } from "wagmi";
 import { useScaffoldContractWrite } from "~~/hooks/scaffold-eth";
 
@@ -38,7 +39,7 @@ const PayDebitRow = (props: Props) => {
       <td>
         <Address size="sm" address={props.debtor} />
       </td>
-      <td>{(props.parsedData.amounts[props.index] / BigInt(10 ** 18)).toString()}</td>
+      <td>{formatEther(props.parsedData.amounts[props.index], "wei").substring(0, 6)}</td>
       <td>
         {props.parsedData.creditors[props.index].map(creditor => (
           <Address key={creditor} size="sm" address={creditor} />
