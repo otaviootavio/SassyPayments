@@ -13,6 +13,7 @@ type TAddressProps = {
   disableAddressLink?: boolean;
   format?: "short" | "long";
   size?: "xs" | "sm" | "base" | "lg" | "xl" | "2xl" | "3xl";
+  hasCopyIcon?: boolean;
 };
 
 const blockieSizeMap = {
@@ -28,7 +29,7 @@ const blockieSizeMap = {
 /**
  * Displays an address (or ENS) with a Blockie image and option to copy address.
  */
-export const Address = ({ address, disableAddressLink, format, size = "base" }: TAddressProps) => {
+export const Address = ({ address, disableAddressLink, format, size = "base", hasCopyIcon = true }: TAddressProps) => {
   const [ens, setEns] = useState<string | null>();
   const [ensAvatar, setEnsAvatar] = useState<string | null>();
   const [addressCopied, setAddressCopied] = useState(false);
@@ -100,26 +101,28 @@ export const Address = ({ address, disableAddressLink, format, size = "base" }: 
           {displayAddress}
         </a>
       )}
-      {addressCopied ? (
+      {hasCopyIcon && addressCopied ? (
         <CheckCircleIcon
           className="ml-1.5 text-xl font-normal text-sky-600 h-5 w-5 cursor-pointer"
           aria-hidden="true"
         />
       ) : (
-        <CopyToClipboard
-          text={address}
-          onCopy={() => {
-            setAddressCopied(true);
-            setTimeout(() => {
-              setAddressCopied(false);
-            }, 800);
-          }}
-        >
-          <DocumentDuplicateIcon
-            className="ml-1.5 text-xl font-normal text-sky-600 h-5 w-5 cursor-pointer"
-            aria-hidden="true"
-          />
-        </CopyToClipboard>
+        hasCopyIcon && (
+          <CopyToClipboard
+            text={address}
+            onCopy={() => {
+              setAddressCopied(true);
+              setTimeout(() => {
+                setAddressCopied(false);
+              }, 800);
+            }}
+          >
+            <DocumentDuplicateIcon
+              className="ml-1.5 text-xl font-normal text-sky-600 h-5 w-5 cursor-pointer"
+              aria-hidden="true"
+            />
+          </CopyToClipboard>
+        )
       )}
     </div>
   );
