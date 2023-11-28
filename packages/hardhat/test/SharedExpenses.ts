@@ -52,6 +52,65 @@ describe("SharedExpenses", function () {
     });
   });
 
+  describe("Debt Management", function () {
+    it("Should correctly report debts and creditors after expenses are added", async function () {
+      const [, borrower, pizzaPayer] = await ethers.getSigners();
+
+      // Create a room and add participants
+      await sharedExpenses.connect(pizzaPayer).createRoom();
+      const roomId = (await sharedExpenses.nextRoomId()).toNumber() - 1;
+      await sharedExpenses.connect(pizzaPayer).addParticipant(roomId, borrower.address);
+
+      // Add an expense
+      await sharedExpenses.connect(pizzaPayer).addExpense(roomId, ethers.utils.parseEther("1"), [borrower.address]);
+
+      // Close the room and check debts
+      await sharedExpenses.connect(pizzaPayer).closeRoom(roomId);
+      const [debtors, amounts, creditors] = await sharedExpenses.getDebts(roomId);
+
+      expect(debtors).to.include(borrower.address);
+      expect(amounts[0].abs()).to.equal(ethers.utils.parseEther("1"));
+      expect(creditors[0]).to.include(pizzaPayer.address);
+    });
+
+    it("Should return empty arrays if no debts are present", async function () {
+      const [, newParticipant] = await ethers.getSigners();
+
+      // Create a new room with no expenses
+      await sharedExpenses.connect(newParticipant).createRoom();
+      const roomId = (await sharedExpenses.nextRoomId()).toNumber() - 1;
+
+      // Close the room and check debts
+      await sharedExpenses.connect(newParticipant).closeRoom(roomId);
+      const [debtors, amounts, creditors] = await sharedExpenses.getDebts(roomId);
+
+      expect(debtors).to.be.empty;
+      expect(amounts).to.be.empty;
+      expect(creditors).to.be.empty;
+    });
+  });
+
+  describe("Participant Details", function () {
+    it("Should correctly return participant details including related participants", async function () {
+      const [, borrower, pizzaPayer] = await ethers.getSigners();
+
+      // Create a room and add participants
+      await sharedExpenses.connect(pizzaPayer).createRoom();
+      const roomId = (await sharedExpenses.nextRoomId()).toNumber() - 1;
+      await sharedExpenses.connect(pizzaPayer).addParticipant(roomId, borrower.address);
+
+      // Check participant details
+      const [isParticipant, balance, relatedParticipants] = await sharedExpenses.getParticipantDetails(
+        roomId,
+        borrower.address,
+      );
+
+      expect(isParticipant).to.be.true;
+      expect(balance).to.equal(0);
+      expect(relatedParticipants).to.be.empty;
+    });
+  });
+
   // describe("Test Adding Participants", function () {
   //   it("Should allow the room owner to add participants", async function () {
   //     // ... setup

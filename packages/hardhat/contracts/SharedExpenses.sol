@@ -21,7 +21,7 @@ contract SharedExpenses {
 	event RoomClosed(uint256 roomId);
 	event ExpenseAdded(uint256 roomId, address payer, uint256 amount);
 	event BalanceSettled(uint256 roomId, address payee, uint256 amount);
-	event DebtPaid(uint roomId, address payer , uint256 amount);
+	event DebtPaid(uint roomId, address payer, uint256 amount);
 	event PaymentDistributed(uint roomId, address payee, uint256 payment);
 
 	function createRoom() external {
@@ -145,10 +145,46 @@ contract SharedExpenses {
 	function getParticipantDetails(
 		uint256 roomId,
 		address participant
-	) external view returns (bool, int256) {
+	) external view returns (bool, int256, address[] memory) {
 		Room storage room = rooms[roomId];
+		require(
+			room.participants[participant].isParticipant,
+			"Not a participant"
+		);
+
 		Participant storage participantData = room.participants[participant];
-		return (participantData.isParticipant, participantData.balance);
+		uint256 numParticipants = room.participantList.length;
+		address[] memory relatedParticipants = new address[](numParticipants);
+		uint256 counter = 0;
+
+		if (participantData.balance < 0) {
+			// For debtors: find to whom they owe money
+			for (uint i = 0; i < numParticipants; i++) {
+				if (room.participants[room.participantList[i]].balance > 0) {
+					relatedParticipants[counter] = room.participantList[i];
+					counter++;
+				}
+			}
+		} else if (participantData.balance > 0) {
+			// For creditors: find who owes them money
+			for (uint i = 0; i < numParticipants; i++) {
+				if (room.participants[room.participantList[i]].balance < 0) {
+					relatedParticipants[counter] = room.participantList[i];
+					counter++;
+				}
+			}
+		}
+
+		// Resize the array to fit the actual number of related participants
+		assembly {
+			mstore(relatedParticipants, counter)
+		}
+
+		return (
+			participantData.isParticipant,
+			participantData.balance,
+			relatedParticipants
+		);
 	}
 
 	function getDebts(
@@ -162,26 +198,37 @@ contract SharedExpenses {
 		require(!room.isOpen, "Room is still open");
 
 		uint256 numParticipants = room.participantList.length;
-		address[] memory debtors = new address[](numParticipants);
-		int256[] memory amounts = new int256[](numParticipants);
-		address[][] memory creditors = new address[][](numParticipants);
+		uint256 debtorCount = 0;
 
+		// First pass to count the actual number of debtors
+		for (uint i = 0; i < numParticipants; i++) {
+			if (room.participants[room.participantList[i]].balance < 0) {
+				debtorCount++;
+			}
+		}
+
+		// Initialize arrays with actual size
+		address[] memory debtors = new address[](debtorCount);
+		int256[] memory amounts = new int256[](debtorCount);
+		address[][] memory creditors = new address[][](debtorCount);
+
+		uint256 debtorIndex = 0;
 		for (uint i = 0; i < numParticipants; i++) {
 			address participant = room.participantList[i];
 			int256 balance = room.participants[participant].balance;
 
 			if (balance < 0) {
-				// This participant owes money
-				debtors[i] = participant;
-				amounts[i] = balance;
+				debtors[debtorIndex] = participant;
+				amounts[debtorIndex] = balance;
 
 				// Find to whom they owe money
 				address[] memory owedTo = new address[](numParticipants);
 				uint256 counter = 0;
 				for (uint j = 0; j < numParticipants; j++) {
-					address potentialCreditor = room.participantList[j];
-					if (room.participants[potentialCreditor].balance > 0) {
-						owedTo[counter] = potentialCreditor;
+					if (
+						room.participants[room.participantList[j]].balance > 0
+					) {
+						owedTo[counter] = room.participantList[j];
 						counter++;
 					}
 				}
@@ -190,7 +237,8 @@ contract SharedExpenses {
 				assembly {
 					mstore(owedTo, counter)
 				}
-				creditors[i] = owedTo;
+				creditors[debtorIndex] = owedTo;
+				debtorIndex++;
 			}
 		}
 
