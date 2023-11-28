@@ -6,6 +6,11 @@ const CreateRoom = () => {
   const { writeAsync: createRoomAsync } = useScaffoldContractWrite({
     contractName: "SharedExpenses",
     functionName: "createRoom",
+    onSuccess: () => {
+      const baseUrl = window.location.origin + window.location.pathname;
+      const fullUrl = baseUrl + "rooms/" + roomId;
+      window.location.href = fullUrl;
+    },
   });
 
   const { data: nextRoomIdResponse } = useScaffoldContractRead({
@@ -23,11 +28,7 @@ const CreateRoom = () => {
         <button
           className="btn btn-sm btn-primary"
           onClick={() => {
-            createRoomAsync?.().then(() => {
-              const baseUrl = window.location.origin + window.location.pathname;
-              const fullUrl = baseUrl + "rooms/" + roomId;
-              window.location.href = fullUrl;
-            });
+            createRoomAsync?.();
           }}
         >
           Create room!
