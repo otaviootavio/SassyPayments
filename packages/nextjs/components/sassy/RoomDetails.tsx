@@ -1,5 +1,5 @@
 /* eslint-disable  @typescript-eslint/no-explicit-any */
-import React from "react";
+import React, { useState } from "react";
 import { useRouter } from "next/router";
 import { Address } from "../scaffold-eth";
 import { formatEther } from "viem";
@@ -20,27 +20,43 @@ type GetRoomDetailsResponse = {
 const RoomDetails = () => {
   const router = useRouter();
   const accountState = useAccount();
+  const [participantDetailResponse, setParticipantDetailResponse] = useState<GetParticipantDetailsResponse | null>(
+    null,
+  );
+  const [roomDetailsResponse, setRoomDetailsResponse] = useState<GetRoomDetailsResponse | null>(null);
+  const [isLoadingRoomDetails, setIsLoadingRoomDetails] = useState<boolean>(true);
+  const [isLoadingParticipantDetails, setIsLoadingParticipantDetails] = useState<boolean>(true);
 
   const room_id: string = router.query.id ? router.query.id[0] : "0";
 
-  const { data: getRoomDetailsResponse } = useScaffoldContractRead({
+  useScaffoldContractRead({
     contractName: "SharedExpenses",
     functionName: "getRoomDetails",
     args: [BigInt(room_id)],
+    onSuccess: async (data: any) => {
+      const roomDetailsResponse_temp = parseToGetRoomDetailsResponse(data);
+      setRoomDetailsResponse(roomDetailsResponse_temp);
+      setIsLoadingParticipantDetails(false);
+    },
   });
 
-  const { data: getParticipantDetailsResponse } = useScaffoldContractRead({
+  useScaffoldContractRead({
     contractName: "SharedExpenses",
     functionName: "getParticipantDetails",
     args: [BigInt(room_id), accountState.address],
+    onSuccess: async (data: any) => {
+      const participantDetailsResponse_temp = parseToGetParticipantDetailsResponse(data);
+      setParticipantDetailResponse(participantDetailsResponse_temp);
+      setIsLoadingRoomDetails(false);
+    },
   });
 
-  const participantDetails = parseToGetParticipantDetailsResponse(getParticipantDetailsResponse as any);
-  const roomDetailsResponse = parseToGetRoomDetailsResponse(getRoomDetailsResponse as any);
-
-  if (!participantDetails || !roomDetailsResponse) {
-    return <>Loading...</>;
-  }
+  if (isLoadingParticipantDetails || isLoadingRoomDetails || !roomDetailsResponse || !participantDetailResponse)
+    return (
+      <div className="card w-full md:w-1/2 bg-base-100 shadow-xl">
+        <div className="card-body">Loading...</div>
+      </div>
+    );
 
   return (
     <>
@@ -48,10 +64,10 @@ const RoomDetails = () => {
         <div className="card-body">
           <h2 className="card-title">My Details</h2>
           <div>
-            <b>Is Participant:</b> {participantDetails.isParticipant.toString()}
+            <b>Is Participant:</b> {participantDetailResponse.isParticipant.toString()}
           </div>
           <div>
-            <b>Balance:</b> {formatEther(participantDetails.balance, "wei").substring(0, 6)} ETH
+            <b>Balance:</b> {formatEther(participantDetailResponse.balance, "wei").substring(0, 6)} ETH
           </div>
         </div>
       </div>
@@ -67,6 +83,7 @@ const RoomDetails = () => {
           </div>
           <div>
             <b>Participants:</b>
+            <br />
             {roomDetailsResponse.participantList.map((str: string, index: number) => (
               <div key={index} className="badge badge-outline mt-2">
                 <Address disableAddressLink={true} format="short" address={str} />
