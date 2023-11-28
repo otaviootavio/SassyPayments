@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState } from "react";
 import { useRouter } from "next/router";
 import PayDebitRow from "./PayDebitRow";
 import { useScaffoldContractRead, useScaffoldContractWrite } from "~~/hooks/scaffold-eth";
@@ -12,11 +12,15 @@ type DebitResponse = {
 const DebitResponseTable = () => {
   const router = useRouter();
   const room_id: string = router.query.id ? router.query.id[0] : "2";
+  const [debitResponse, setDebitResponse] = useState<DebitResponse | null>(null);
 
-  const { data: getDebts } = useScaffoldContractRead({
+  useScaffoldContractRead({
     contractName: "SharedExpenses",
     functionName: "getDebts",
     args: [BigInt(room_id)],
+    onSuccess: async data => {
+      setDebitResponse(parseAnyToDebitResponse(data));
+    },
   });
 
   const { writeAsync: distributePayments } = useScaffoldContractWrite({
@@ -25,36 +29,37 @@ const DebitResponseTable = () => {
     args: [BigInt(room_id)],
   });
 
-  const getDebtsData = getDebts as any;
-  const parsedData = parseAnyToDebitResponse(getDebtsData);
-
   return (
     <div className="card w-full md:w-1/8 bg-base-100 shadow-xl">
       <div className="card-body">
-        <h2 className="card-title">Room is closed!</h2>
         <div className="overflow-x-auto">
-          <table className="table">
-            <thead>
-              <tr>
-                <th>Debtor</th>
-                <th>Amount (ETH)</th>
-                <th>Creditors</th>
-              </tr>
-            </thead>
-            <tbody>
-              {parsedData?.debtors.map((debtor, index) => (
-                <PayDebitRow parsedData={parsedData} index={index} key={index} debtor={debtor} />
-              ))}
-            </tbody>
-          </table>
-          <button
-            className="btn btn-primary btn-sm"
-            onClick={() => {
-              distributePayments();
-            }}
-          >
-            Distribuite payments!
-          </button>
+          {debitResponse && debitResponse.debtors.length > 0 ? (
+            <>
+              <table className="table">
+                <thead>
+                  <tr>
+                    <th>Debtor</th>
+                    <th>Amount (ETH)</th>
+                    <th>Creditors</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {debitResponse?.debtors.map((debtor, index) => (
+                    <PayDebitRow parsedData={debitResponse} index={index} key={index} debtor={debtor} />
+                  ))}
+                </tbody>
+              </table>
+            </>
+          ) : (
+            <button
+              className="btn btn-primary btn-sm"
+              onClick={() => {
+                distributePayments();
+              }}
+            >
+              Distribuite payments!
+            </button>
+          )}
         </div>
       </div>
     </div>

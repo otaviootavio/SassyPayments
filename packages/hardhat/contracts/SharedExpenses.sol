@@ -58,16 +58,30 @@ contract SharedExpenses {
 			room.participants[msg.sender].isParticipant,
 			"Not a participant"
 		);
+		require(payees.length > 0, "Payees list cannot be empty");
 
 		uint256 share = amount / payees.length;
+		bool isPayerAlsoPayee = false;
+		bool isPayerOnlyPayee = payees.length == 1 && payees[0] == msg.sender;
+
+		require(!isPayerOnlyPayee, "Payer cannot be the sole payee");
+
 		for (uint i = 0; i < payees.length; i++) {
 			require(
 				room.participants[payees[i]].isParticipant,
 				"Payee not a participant"
 			);
-			room.participants[payees[i]].balance -= int256(share);
+			if (payees[i] == msg.sender) {
+				isPayerAlsoPayee = true;
+			} else {
+				room.participants[payees[i]].balance -= int256(share);
+			}
 		}
-		room.participants[msg.sender].balance += int256(amount);
+
+		int256 netExpense = isPayerAlsoPayee
+			? int256(amount - share)
+			: int256(amount);
+		room.participants[msg.sender].balance += netExpense;
 
 		emit ExpenseAdded(roomId, msg.sender, amount);
 	}
@@ -145,46 +159,10 @@ contract SharedExpenses {
 	function getParticipantDetails(
 		uint256 roomId,
 		address participant
-	) external view returns (bool, int256, address[] memory) {
+	) external view returns (bool, int256) {
 		Room storage room = rooms[roomId];
-		require(
-			room.participants[participant].isParticipant,
-			"Not a participant"
-		);
-
 		Participant storage participantData = room.participants[participant];
-		uint256 numParticipants = room.participantList.length;
-		address[] memory relatedParticipants = new address[](numParticipants);
-		uint256 counter = 0;
-
-		if (participantData.balance < 0) {
-			// For debtors: find to whom they owe money
-			for (uint i = 0; i < numParticipants; i++) {
-				if (room.participants[room.participantList[i]].balance > 0) {
-					relatedParticipants[counter] = room.participantList[i];
-					counter++;
-				}
-			}
-		} else if (participantData.balance > 0) {
-			// For creditors: find who owes them money
-			for (uint i = 0; i < numParticipants; i++) {
-				if (room.participants[room.participantList[i]].balance < 0) {
-					relatedParticipants[counter] = room.participantList[i];
-					counter++;
-				}
-			}
-		}
-
-		// Resize the array to fit the actual number of related participants
-		assembly {
-			mstore(relatedParticipants, counter)
-		}
-
-		return (
-			participantData.isParticipant,
-			participantData.balance,
-			relatedParticipants
-		);
+		return (participantData.isParticipant, participantData.balance);
 	}
 
 	function getDebts(
@@ -195,7 +173,6 @@ contract SharedExpenses {
 		returns (address[] memory, int256[] memory, address[][] memory)
 	{
 		Room storage room = rooms[roomId];
-		require(!room.isOpen, "Room is still open");
 
 		uint256 numParticipants = room.participantList.length;
 		uint256 debtorCount = 0;

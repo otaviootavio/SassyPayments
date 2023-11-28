@@ -5,6 +5,7 @@ import { Address } from "../scaffold-eth";
 import { formatEther } from "viem";
 import { useAccount } from "wagmi";
 import { useScaffoldContractRead } from "~~/hooks/scaffold-eth";
+import { notification } from "~~/utils/scaffold-eth";
 
 type GetParticipantDetailsResponse = {
   isParticipant: boolean;
@@ -24,8 +25,6 @@ const RoomDetails = () => {
     null,
   );
   const [roomDetailsResponse, setRoomDetailsResponse] = useState<GetRoomDetailsResponse | null>(null);
-  const [isLoadingRoomDetails, setIsLoadingRoomDetails] = useState<boolean>(true);
-  const [isLoadingParticipantDetails, setIsLoadingParticipantDetails] = useState<boolean>(true);
 
   const room_id: string = router.query.id ? router.query.id[0] : "0";
 
@@ -36,7 +35,9 @@ const RoomDetails = () => {
     onSuccess: async (data: any) => {
       const roomDetailsResponse_temp = parseToGetRoomDetailsResponse(data);
       setRoomDetailsResponse(roomDetailsResponse_temp);
-      setIsLoadingParticipantDetails(false);
+    },
+    onError: async e => {
+      notification.error(e.message);
     },
   });
 
@@ -47,11 +48,13 @@ const RoomDetails = () => {
     onSuccess: async (data: any) => {
       const participantDetailsResponse_temp = parseToGetParticipantDetailsResponse(data);
       setParticipantDetailResponse(participantDetailsResponse_temp);
-      setIsLoadingRoomDetails(false);
+    },
+    onError: async e => {
+      notification.error(e.message);
     },
   });
 
-  if (isLoadingParticipantDetails || isLoadingRoomDetails || !roomDetailsResponse || !participantDetailResponse)
+  if (!roomDetailsResponse || !participantDetailResponse)
     return (
       <div className="card w-full md:w-1/2 bg-base-100 shadow-xl">
         <div className="card-body">Loading...</div>

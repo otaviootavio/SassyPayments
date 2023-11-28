@@ -3,6 +3,7 @@ import { useRouter } from "next/router";
 import { EtherInput } from "../scaffold-eth";
 import SelectWhoHasBorrowed from "./SelectWhoHasBorrowed";
 import { parseEther } from "viem";
+import { useAccount } from "wagmi";
 import { useScaffoldContractRead, useScaffoldContractWrite } from "~~/hooks/scaffold-eth";
 
 type GetRoomDetailsResponse = {
@@ -12,6 +13,9 @@ type GetRoomDetailsResponse = {
 };
 
 const AddExpenseToRoom = () => {
+  const account = useAccount();
+  const accountAddress = account.address ? account.address : "0";
+
   const [ammount, setAmmount] = useState<string>("0");
   const [borrowers, setBorrowers] = useState<string[]>([]);
   const [isLoading, setIsLoading] = useState<boolean>(true);
@@ -31,6 +35,12 @@ const AddExpenseToRoom = () => {
     args: [BigInt(room_id)],
     onSuccess: async (data: any) => {
       const roomDetailsResponse_temp = parseToGetRoomDetailsResponse(data);
+      if (!roomDetailsResponse_temp) return;
+
+      roomDetailsResponse_temp.participantList = roomDetailsResponse_temp?.participantList.filter(
+        item => item !== accountAddress,
+      );
+
       setRoomDetailsResponse(roomDetailsResponse_temp);
       setIsLoading(false);
     },

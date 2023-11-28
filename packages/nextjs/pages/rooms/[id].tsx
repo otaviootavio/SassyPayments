@@ -1,5 +1,7 @@
+import { useState } from "react";
 import { useRouter } from "next/router";
 import type { NextPage } from "next";
+import { useAccount } from "wagmi";
 import AddExpenseToRoom from "~~/components/sassy/AddExpenseToRoom";
 import AddNewMemberToRoom from "~~/components/sassy/AddNewMemberToRoom";
 import CloseRoom from "~~/components/sassy/CloseRoom";
@@ -14,27 +16,36 @@ type RoomDetailResponse = {
 };
 
 const TransactionPage: NextPage = () => {
+  const account = useAccount();
+  const accountAddress = account.address ? account.address : "0";
   const router = useRouter();
   const room_id: string = router.query.id ? router.query.id[0] : "0";
+  const [roomDetailParsed, setRoomDetailParsed] = useState<RoomDetailResponse | null>(null);
 
-  const { data: getRoomDetail } = useScaffoldContractRead({
+  useScaffoldContractRead({
     contractName: "SharedExpenses",
     functionName: "getRoomDetails",
     args: [BigInt(room_id)],
+    onSuccess: async data => {
+      setRoomDetailParsed(parseRoomDetailResponse(data));
+    },
   });
-
-  const roomDetailParsed = parseRoomDetailResponse(getRoomDetail);
 
   return (
     <div className="container mx-auto mt-10 mb-20 px-10 md:px-0">
       <div className="flex flex-col md:flex-row gap-4 p-4">
         <RoomDetails />
       </div>
+      {roomDetailParsed && roomDetailParsed.isopen && (
+        <div className="flex flex-col md:flex-row gap-4 p-4">
+          <AddNewMemberToRoom /> <AddExpenseToRoom key={accountAddress} />
+        </div>
+      )}
+      {roomDetailParsed && (
+        <div className="flex flex-col md:flex-row gap-4 p-4">{roomDetailParsed && <CloseRoom />}</div>
+      )}
       <div className="flex flex-col md:flex-row gap-4 p-4">
-        <AddNewMemberToRoom /> <AddExpenseToRoom />
-      </div>
-      <div className="flex flex-col md:flex-row gap-4 p-4">
-        {roomDetailParsed?.isopen ? <CloseRoom /> : <DebitResponseTable />}
+        <DebitResponseTable />
       </div>
     </div>
   );
