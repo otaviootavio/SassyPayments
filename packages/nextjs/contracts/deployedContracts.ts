@@ -525,7 +525,7 @@ const deployedContracts = {
   },
   11155111: {
     SharedExpenses: {
-      address: "0xDB89758054B6B84b337AC3eCc8E87F9D37993229",
+      address: "0x5E7BA7Ac20d26f085BB901E74EB6d0e3802Cc4cB",
       abi: [
         {
           anonymous: false,
@@ -753,11 +753,6 @@ const deployedContracts = {
               name: "",
               type: "int256[]",
             },
-            {
-              internalType: "address[][]",
-              name: "",
-              type: "address[][]",
-            },
           ],
           stateMutability: "view",
           type: "function",
@@ -787,6 +782,11 @@ const deployedContracts = {
               name: "",
               type: "int256",
             },
+            {
+              internalType: "bool",
+              name: "",
+              type: "bool",
+            },
           ],
           stateMutability: "view",
           type: "function",
@@ -815,6 +815,30 @@ const deployedContracts = {
               internalType: "address[]",
               name: "",
               type: "address[]",
+            },
+          ],
+          stateMutability: "view",
+          type: "function",
+        },
+        {
+          inputs: [
+            {
+              internalType: "uint256",
+              name: "roomId",
+              type: "uint256",
+            },
+            {
+              internalType: "address",
+              name: "participant",
+              type: "address",
+            },
+          ],
+          name: "hasParticipantPaid",
+          outputs: [
+            {
+              internalType: "bool",
+              name: "",
+              type: "bool",
             },
           ],
           stateMutability: "view",
