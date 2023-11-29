@@ -36,7 +36,6 @@ contract SharedExpenses {
 
 	function addParticipant(uint256 roomId, address participant) external {
 		Room storage room = rooms[roomId];
-		require(msg.sender == room.owner, "Only owner can add participants");
 		require(room.isOpen, "Room is closed");
 		require(
 			!room.participants[participant].isParticipant,
@@ -173,6 +172,7 @@ contract SharedExpenses {
 		returns (address[] memory, int256[] memory, address[][] memory)
 	{
 		Room storage room = rooms[roomId];
+		require(room.participantList.length > 0, "No participants in the room");
 
 		uint256 numParticipants = room.participantList.length;
 		uint256 debtorCount = 0;
@@ -211,10 +211,12 @@ contract SharedExpenses {
 				}
 
 				// Resize the array to fit the actual number of creditors
-				assembly {
-					mstore(owedTo, counter)
+				address[] memory resizedOwedTo = new address[](counter);
+				for (uint k = 0; k < counter; k++) {
+					resizedOwedTo[k] = owedTo[k];
 				}
-				creditors[debtorIndex] = owedTo;
+
+				creditors[debtorIndex] = resizedOwedTo;
 				debtorIndex++;
 			}
 		}

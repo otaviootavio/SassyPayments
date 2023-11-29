@@ -2,11 +2,10 @@ import { useState } from "react";
 import { useRouter } from "next/router";
 import type { NextPage } from "next";
 import { useAccount } from "wagmi";
-import AddExpenseToRoom from "~~/components/sassy/AddExpenseToRoom";
-import AddNewMemberToRoom from "~~/components/sassy/AddNewMemberToRoom";
 import CloseRoom from "~~/components/sassy/CloseRoom";
 import DebitResponseTable from "~~/components/sassy/DebitResponseTable";
 import RoomDetails from "~~/components/sassy/RoomDetails";
+import SwitchInterface from "~~/components/sassy/SwitchInterface";
 import { useScaffoldContractRead } from "~~/hooks/scaffold-eth";
 
 type RoomDetailResponse = {
@@ -53,8 +52,8 @@ const TransactionPage: NextPage = () => {
         <RoomDetails />
       </div>
       {roomDetailParsed && roomDetailParsed.isopen && (
-        <div className="flex flex-col md:flex-row gap-4 p-4">
-          <AddNewMemberToRoom /> <AddExpenseToRoom key={accountAddress} />
+        <div>
+          <SwitchInterface accountAddress={accountAddress} />
         </div>
       )}
       {roomDetailParsed && (

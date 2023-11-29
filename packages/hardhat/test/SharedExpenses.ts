@@ -91,7 +91,7 @@ describe("SharedExpenses", function () {
   });
 
   describe("Participant Details", function () {
-    it("Should correctly return participant details including related participants", async function () {
+    it("Should correctly return participant details", async function () {
       const [, borrower, pizzaPayer] = await ethers.getSigners();
 
       // Create a room and add participants
@@ -100,14 +100,41 @@ describe("SharedExpenses", function () {
       await sharedExpenses.connect(pizzaPayer).addParticipant(roomId, borrower.address);
 
       // Check participant details
-      const [isParticipant, balance, relatedParticipants] = await sharedExpenses.getParticipantDetails(
-        roomId,
-        borrower.address,
-      );
+      const [isParticipant, balance] = await sharedExpenses.getParticipantDetails(roomId, borrower.address);
 
       expect(isParticipant).to.be.true;
       expect(balance).to.equal(0);
-      expect(relatedParticipants).to.be.empty;
+    });
+  });
+
+  describe("Debt Retrieval", function () {
+    it("Should accurately report debts and creditors", async function () {
+      const [owner, participant1, participant2] = await ethers.getSigners();
+
+      // Owner creates a room
+      await sharedExpenses.connect(owner).createRoom();
+      const roomId = (await sharedExpenses.nextRoomId()).toNumber() - 1;
+
+      // Add participants to the room
+      await sharedExpenses.connect(owner).addParticipant(roomId, participant1.address);
+      await sharedExpenses.connect(owner).addParticipant(roomId, participant2.address);
+
+      // Participant1 incurs an expense paid by Participant2
+      const expenseAmount = ethers.utils.parseEther("2"); // 2 ETH
+      await sharedExpenses.connect(participant2).addExpense(roomId, expenseAmount, [participant1.address]);
+
+      // Close the room
+      await sharedExpenses.connect(owner).closeRoom(roomId);
+
+      // Retrieve debts
+      const [debtors, amounts, creditors] = await sharedExpenses.getDebts(roomId);
+
+      // Assertions
+      expect(debtors).to.have.lengthOf(1);
+      expect(debtors[0]).to.equal(participant1.address);
+      expect(amounts[0]).to.equal(expenseAmount.mul(BigInt(-1)));
+      expect(creditors[0]).to.have.lengthOf(1);
+      expect(creditors[0][0]).to.equal(participant2.address);
     });
   });
 

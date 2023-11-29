@@ -47,34 +47,32 @@ const AddExpenseToRoom = () => {
   });
 
   return (
-    <div className="card w-full md:w-1/2 bg-base-100 shadow-xl">
-      <div className="card-body">
-        <h2 className="card-title">Add people that owe you!</h2>
-        <label htmlFor="borrower">
-          Who has borrowed?
-          <br />
-          {isLoading || (
-            <SelectWhoHasBorrowed
-              selectedValues={borrowers}
-              setSelectedValues={setBorrowers}
-              options={roomDetailsResponse ? roomDetailsResponse?.participantList : [""]}
-            />
-          )}
-        </label>
-        <label htmlFor="ammount">
-          Amout
-          <EtherInput onChange={setAmmount} value={ammount} />
-        </label>
-        <button
-          className="btn btn-sm btn-primary"
-          onClick={() => {
-            writeAsync();
-          }}
-        >
-          GO!
-        </button>
-      </div>
-    </div>
+    <>
+      <h2 className="card-title">Add people that owe you!</h2>
+      <label htmlFor="borrower">
+        Who has borrowed?
+        <br />
+        {isLoading || (
+          <SelectWhoHasBorrowed
+            selectedValues={borrowers}
+            setSelectedValues={setBorrowers}
+            options={roomDetailsResponse ? roomDetailsResponse?.participantList : [""]}
+          />
+        )}
+      </label>
+      <label htmlFor="ammount">
+        Amout
+        <EtherInput onChange={setAmmount} value={ammount} />
+      </label>
+      <button
+        className="btn btn-sm btn-primary"
+        onClick={() => {
+          writeAsync();
+        }}
+      >
+        GO!
+      </button>
+    </>
   );
 };
 

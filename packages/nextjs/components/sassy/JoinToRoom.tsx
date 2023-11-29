@@ -1,28 +1,29 @@
-import React, { useState } from "react";
+import React from "react";
 import { useRouter } from "next/router";
-import { AddressInput } from "../scaffold-eth";
+import { Address } from "../scaffold-eth";
+import { useAccount } from "wagmi";
 import { useScaffoldContractWrite } from "~~/hooks/scaffold-eth";
 
-const AddNewMemberToRoom = () => {
-  const [address, setAddress] = useState<string>("");
+const JoinToRoom = () => {
+  const account = useAccount();
   const router = useRouter();
   const room_id: string = router.query.id ? router.query.id[0] : "0";
 
   const { writeAsync } = useScaffoldContractWrite({
     contractName: "SharedExpenses",
     functionName: "addParticipant",
-    args: [BigInt(room_id), address],
+    args: [BigInt(room_id), account.address],
   });
 
   return (
     <>
-      <h2 className="card-title">Add new participant!</h2>
-      <AddressInput onChange={setAddress} value={address} placeholder="Input your address" />
+      <h2 className="card-title">Join to the room!</h2>
+      <Address address={account.address} hasCopyIcon={false} format="short" />
       <button className="btn btn-sm btn-primary" onClick={() => writeAsync()}>
-        add
+        Im in it!
       </button>
     </>
   );
 };
 
-export default AddNewMemberToRoom;
+export default JoinToRoom;
