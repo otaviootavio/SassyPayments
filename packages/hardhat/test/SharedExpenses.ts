@@ -66,14 +66,13 @@ describe("SharedExpenses", function () {
 
       // Close the room and check debts
       await sharedExpenses.connect(pizzaPayer).closeRoom(roomId);
-      const [debtors, amounts, creditors] = await sharedExpenses.getDebts(roomId);
+      const [debtors, amounts] = await sharedExpenses.getDebts(roomId);
 
       expect(debtors).to.include(borrower.address);
       expect(amounts[0].abs()).to.equal(ethers.utils.parseEther("1"));
-      expect(creditors[0]).to.include(pizzaPayer.address);
     });
 
-    it("Should return empty arrays if no debts are present", async function () {
+    it("Should return the owner's address with a zero balance if no debts are present", async function () {
       const [, newParticipant] = await ethers.getSigners();
 
       // Create a new room with no expenses
@@ -82,11 +81,45 @@ describe("SharedExpenses", function () {
 
       // Close the room and check debts
       await sharedExpenses.connect(newParticipant).closeRoom(roomId);
-      const [debtors, amounts, creditors] = await sharedExpenses.getDebts(roomId);
+      const [participants, balances] = await sharedExpenses.getDebts(roomId);
 
-      expect(debtors).to.be.empty;
-      expect(amounts).to.be.empty;
-      expect(creditors).to.be.empty;
+      expect(participants).to.have.lengthOf(1);
+      expect(participants[0]).to.equal(newParticipant.address);
+      expect(balances).to.have.lengthOf(1);
+      expect(balances[0]).to.equal(0);
+    });
+
+    describe("Debt Management with Three Participants", function () {
+      it("Should accurately report debts and balances with three participants", async function () {
+        const [owner, participant1, participant2, participant3] = await ethers.getSigners();
+
+        // Owner creates a room
+        await sharedExpenses.connect(owner).createRoom();
+        const roomId = (await sharedExpenses.nextRoomId()).toNumber() - 1;
+
+        // Add participants to the room
+        await sharedExpenses.connect(owner).addParticipant(roomId, participant1.address);
+        await sharedExpenses.connect(owner).addParticipant(roomId, participant2.address);
+        await sharedExpenses.connect(owner).addParticipant(roomId, participant3.address);
+
+        // Participant1 incurs an expense paid by Participant2
+        const expenseAmount1 = ethers.utils.parseEther("2"); // 2 ETH
+        await sharedExpenses.connect(participant2).addExpense(roomId, expenseAmount1, [participant1.address]);
+
+        // Participant3 does not incur any expenses
+
+        // Close the room
+        await sharedExpenses.connect(owner).closeRoom(roomId);
+
+        // Retrieve participant balances
+        const [participants, balances] = await sharedExpenses.getDebts(roomId);
+
+        // Assertions
+        expect(participants).to.include.members([participant1.address, participant2.address, participant3.address]);
+        expect(balances[participants.indexOf(participant1.address)]).to.equal(expenseAmount1.mul(BigInt(-1))); // Participant1's debt
+        expect(balances[participants.indexOf(participant2.address)]).to.equal(expenseAmount1); // Participant2's credit
+        expect(balances[participants.indexOf(participant3.address)]).to.equal(0); // Participant3's balance should be zero
+      });
     });
   });
 
@@ -104,37 +137,6 @@ describe("SharedExpenses", function () {
 
       expect(isParticipant).to.be.true;
       expect(balance).to.equal(0);
-    });
-  });
-
-  describe("Debt Retrieval", function () {
-    it("Should accurately report debts and creditors", async function () {
-      const [owner, participant1, participant2] = await ethers.getSigners();
-
-      // Owner creates a room
-      await sharedExpenses.connect(owner).createRoom();
-      const roomId = (await sharedExpenses.nextRoomId()).toNumber() - 1;
-
-      // Add participants to the room
-      await sharedExpenses.connect(owner).addParticipant(roomId, participant1.address);
-      await sharedExpenses.connect(owner).addParticipant(roomId, participant2.address);
-
-      // Participant1 incurs an expense paid by Participant2
-      const expenseAmount = ethers.utils.parseEther("2"); // 2 ETH
-      await sharedExpenses.connect(participant2).addExpense(roomId, expenseAmount, [participant1.address]);
-
-      // Close the room
-      await sharedExpenses.connect(owner).closeRoom(roomId);
-
-      // Retrieve debts
-      const [debtors, amounts, creditors] = await sharedExpenses.getDebts(roomId);
-
-      // Assertions
-      expect(debtors).to.have.lengthOf(1);
-      expect(debtors[0]).to.equal(participant1.address);
-      expect(amounts[0]).to.equal(expenseAmount.mul(BigInt(-1)));
-      expect(creditors[0]).to.have.lengthOf(1);
-      expect(creditors[0][0]).to.equal(participant2.address);
     });
   });
 

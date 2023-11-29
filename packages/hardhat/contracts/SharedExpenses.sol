@@ -5,6 +5,7 @@ contract SharedExpenses {
 	struct Participant {
 		bool isParticipant;
 		int256 balance;
+		bool hasPaid;
 	}
 
 	struct Room {
@@ -29,7 +30,7 @@ contract SharedExpenses {
 		room.owner = msg.sender;
 		room.isOpen = true;
 		room.participantList.push(msg.sender);
-		room.participants[msg.sender] = Participant(true, 0);
+		room.participants[msg.sender] = Participant(true, 0, true);
 		emit RoomCreated(nextRoomId, msg.sender);
 		nextRoomId++;
 	}
@@ -42,7 +43,7 @@ contract SharedExpenses {
 			"Already a participant"
 		);
 
-		room.participants[participant] = Participant(true, 0);
+		room.participants[participant] = Participant(true, 0, true);
 		room.participantList.push(participant);
 	}
 
@@ -74,6 +75,12 @@ contract SharedExpenses {
 				isPayerAlsoPayee = true;
 			} else {
 				room.participants[payees[i]].balance -= int256(share);
+
+				if ( int256(share) > room.participants[payees[i]].balance) {
+					room.participants[payees[i]].hasPaid = true;
+				} else {
+					room.participants[payees[i]].hasPaid = true;
+				}
 			}
 		}
 
@@ -109,7 +116,7 @@ contract SharedExpenses {
 		require(msg.value == amountToPay, "Incorrect payment amount");
 
 		// Update the participant's balance to reflect the payment
-		room.participants[msg.sender].balance += int256(msg.value);
+		room.participants[msg.sender].hasPaid = true;
 
 		// Optionally, you can emit an event here
 		emit DebtPaid(roomId, msg.sender, msg.value);
@@ -158,69 +165,42 @@ contract SharedExpenses {
 	function getParticipantDetails(
 		uint256 roomId,
 		address participant
-	) external view returns (bool, int256) {
+	) external view returns (bool, int256, bool) {
 		Room storage room = rooms[roomId];
 		Participant storage participantData = room.participants[participant];
-		return (participantData.isParticipant, participantData.balance);
+		return (
+			participantData.isParticipant,
+			participantData.balance,
+			participantData.hasPaid
+		);
+	}
+
+	function hasParticipantPaid(
+		uint256 roomId,
+		address participant
+	) external view returns (bool) {
+		Room storage room = rooms[roomId];
+		return room.participants[participant].hasPaid;
 	}
 
 	function getDebts(
 		uint256 roomId
-	)
-		external
-		view
-		returns (address[] memory, int256[] memory, address[][] memory)
-	{
+	) external view returns (address[] memory, int256[] memory) {
 		Room storage room = rooms[roomId];
 		require(room.participantList.length > 0, "No participants in the room");
 
 		uint256 numParticipants = room.participantList.length;
-		uint256 debtorCount = 0;
 
-		// First pass to count the actual number of debtors
-		for (uint i = 0; i < numParticipants; i++) {
-			if (room.participants[room.participantList[i]].balance < 0) {
-				debtorCount++;
-			}
-		}
+		// Initialize arrays to hold participant addresses and their balances
+		address[] memory participants = new address[](numParticipants);
+		int256[] memory balances = new int256[](numParticipants);
 
-		// Initialize arrays with actual size
-		address[] memory debtors = new address[](debtorCount);
-		int256[] memory amounts = new int256[](debtorCount);
-		address[][] memory creditors = new address[][](debtorCount);
-
-		uint256 debtorIndex = 0;
 		for (uint i = 0; i < numParticipants; i++) {
 			address participant = room.participantList[i];
-			int256 balance = room.participants[participant].balance;
-
-			if (balance < 0) {
-				debtors[debtorIndex] = participant;
-				amounts[debtorIndex] = balance;
-
-				// Find to whom they owe money
-				address[] memory owedTo = new address[](numParticipants);
-				uint256 counter = 0;
-				for (uint j = 0; j < numParticipants; j++) {
-					if (
-						room.participants[room.participantList[j]].balance > 0
-					) {
-						owedTo[counter] = room.participantList[j];
-						counter++;
-					}
-				}
-
-				// Resize the array to fit the actual number of creditors
-				address[] memory resizedOwedTo = new address[](counter);
-				for (uint k = 0; k < counter; k++) {
-					resizedOwedTo[k] = owedTo[k];
-				}
-
-				creditors[debtorIndex] = resizedOwedTo;
-				debtorIndex++;
-			}
+			participants[i] = participant;
+			balances[i] = room.participants[participant].balance;
 		}
 
-		return (debtors, amounts, creditors);
+		return (participants, balances);
 	}
 }
