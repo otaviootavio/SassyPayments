@@ -51,14 +51,16 @@ const DebitResponseTable = () => {
               </table>
             </>
           ) : (
-            <button
-              className="btn btn-primary btn-sm"
-              onClick={() => {
-                distributePayments();
-              }}
-            >
-              Distribuite payments!
-            </button>
+            !debitResponse && (
+              <button
+                className="btn btn-primary btn-sm"
+                onClick={() => {
+                  distributePayments();
+                }}
+              >
+                Distribuite payments!
+              </button>
+            )
           )}
         </div>
       </div>

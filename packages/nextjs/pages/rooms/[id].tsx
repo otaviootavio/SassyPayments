@@ -15,12 +15,19 @@ type RoomDetailResponse = {
   participantlist: string[];
 };
 
+type DebitResponse = {
+  debtors: string[];
+  amounts: bigint[];
+  creditors: string[][];
+};
+
 const TransactionPage: NextPage = () => {
   const account = useAccount();
   const accountAddress = account.address ? account.address : "0";
   const router = useRouter();
   const room_id: string = router.query.id ? router.query.id[0] : "0";
   const [roomDetailParsed, setRoomDetailParsed] = useState<RoomDetailResponse | null>(null);
+  const [debitResponse, setDebitResponse] = useState<DebitResponse | null>(null);
 
   useScaffoldContractRead({
     contractName: "SharedExpenses",
@@ -28,6 +35,15 @@ const TransactionPage: NextPage = () => {
     args: [BigInt(room_id)],
     onSuccess: async data => {
       setRoomDetailParsed(parseRoomDetailResponse(data));
+    },
+  });
+
+  useScaffoldContractRead({
+    contractName: "SharedExpenses",
+    functionName: "getDebts",
+    args: [BigInt(room_id)],
+    onSuccess: async data => {
+      setDebitResponse(parseAnyToDebitResponse(data));
     },
   });
 
@@ -44,9 +60,11 @@ const TransactionPage: NextPage = () => {
       {roomDetailParsed && (
         <div className="flex flex-col md:flex-row gap-4 p-4">{roomDetailParsed && <CloseRoom />}</div>
       )}
-      <div className="flex flex-col md:flex-row gap-4 p-4">
-        <DebitResponseTable />
-      </div>
+      {debitResponse && debitResponse.amounts.length > 0 && (
+        <div className="flex flex-col md:flex-row gap-4 p-4">
+          <DebitResponseTable />
+        </div>
+      )}
     </div>
   );
 };
@@ -66,3 +84,27 @@ function parseRoomDetailResponse(input: any): RoomDetailResponse | null {
   return null;
 }
 export default TransactionPage;
+
+function parseAnyToDebitResponse(input: any): DebitResponse | null {
+  if (
+    !Array.isArray(input) ||
+    input.length !== 3 ||
+    !Array.isArray(input[0]) ||
+    !Array.isArray(input[1]) ||
+    !Array.isArray(input[2])
+  ) {
+    return null;
+  }
+
+  const [debtors, amounts, creditors] = input;
+
+  if (
+    !debtors.every(item => typeof item === "string") ||
+    !amounts.every(item => typeof item === "bigint") ||
+    !creditors.every(item => Array.isArray(item) && item.every(subItem => typeof subItem === "string"))
+  ) {
+    return null;
+  }
+
+  return { debtors, amounts, creditors };
+}
