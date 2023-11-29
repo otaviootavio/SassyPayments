@@ -82,14 +82,11 @@ const RoomDetails = () => {
             <Address address={roomDetailsResponse.owner} />
           </div>
           <div>
-            <b>Is Open:</b> {roomDetailsResponse.isOpen.toString()}
-          </div>
-          <div>
             <b>Participants:</b>
             <br />
             {roomDetailsResponse.participantList.map((str: string, index: number) => (
               <div key={index} className="badge badge-outline mt-2">
-                <Address disableAddressLink={true} format="short" address={str} />
+                <Address format="short" address={str} />
               </div>
             ))}
           </div>
