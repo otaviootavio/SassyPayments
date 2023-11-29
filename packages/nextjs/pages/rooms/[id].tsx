@@ -17,7 +17,6 @@ type RoomDetailResponse = {
 type DebitResponse = {
   debtors: string[];
   amounts: bigint[];
-  creditors: string[][];
 };
 
 const TransactionPage: NextPage = () => {
@@ -85,25 +84,15 @@ function parseRoomDetailResponse(input: any): RoomDetailResponse | null {
 export default TransactionPage;
 
 function parseAnyToDebitResponse(input: any): DebitResponse | null {
-  if (
-    !Array.isArray(input) ||
-    input.length !== 3 ||
-    !Array.isArray(input[0]) ||
-    !Array.isArray(input[1]) ||
-    !Array.isArray(input[2])
-  ) {
+  if (!Array.isArray(input) || input.length !== 2 || !Array.isArray(input[0]) || !Array.isArray(input[1])) {
     return null;
   }
 
-  const [debtors, amounts, creditors] = input;
+  const [debtors, amounts] = input;
 
-  if (
-    !debtors.every(item => typeof item === "string") ||
-    !amounts.every(item => typeof item === "bigint") ||
-    !creditors.every(item => Array.isArray(item) && item.every(subItem => typeof subItem === "string"))
-  ) {
+  if (!debtors.every(item => typeof item === "string") || !amounts.every(item => typeof item === "bigint")) {
     return null;
   }
 
-  return { debtors, amounts, creditors };
+  return { debtors, amounts };
 }

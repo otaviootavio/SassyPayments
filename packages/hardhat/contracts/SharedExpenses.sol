@@ -76,10 +76,10 @@ contract SharedExpenses {
 			} else {
 				room.participants[payees[i]].balance -= int256(share);
 
-				if ( int256(share) > room.participants[payees[i]].balance) {
+				if (room.participants[payees[i]].balance >= 0 ) {
 					room.participants[payees[i]].hasPaid = true;
 				} else {
-					room.participants[payees[i]].hasPaid = true;
+					room.participants[payees[i]].hasPaid = false;
 				}
 			}
 		}
@@ -88,6 +88,12 @@ contract SharedExpenses {
 			? int256(amount - share)
 			: int256(amount);
 		room.participants[msg.sender].balance += netExpense;
+
+		if (room.participants[msg.sender].balance >= 0) {
+			room.participants[msg.sender].hasPaid = true;
+		} else {
+			room.participants[msg.sender].hasPaid = false;
+		}
 
 		emit ExpenseAdded(roomId, msg.sender, amount);
 	}
@@ -116,7 +122,7 @@ contract SharedExpenses {
 		require(msg.value == amountToPay, "Incorrect payment amount");
 
 		// Update the participant's balance to reflect the payment
-		room.participants[msg.sender].hasPaid = true;
+		room.participants[msg.sender].balance += int(msg.value);
 
 		// Optionally, you can emit an event here
 		emit DebtPaid(roomId, msg.sender, msg.value);
@@ -171,7 +177,7 @@ contract SharedExpenses {
 		return (
 			participantData.isParticipant,
 			participantData.balance,
-			participantData.hasPaid
+			participantData.balance >= 0
 		);
 	}
 
@@ -180,7 +186,7 @@ contract SharedExpenses {
 		address participant
 	) external view returns (bool) {
 		Room storage room = rooms[roomId];
-		return room.participants[participant].hasPaid;
+		return room.participants[participant].balance >= 0;
 	}
 
 	function getDebts(

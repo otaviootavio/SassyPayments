@@ -18,6 +18,7 @@ const JoinToRoom = () => {
   return (
     <>
       <h2 className="card-title">Join to the room!</h2>
+      Current address: <br />
       <Address address={account.address} hasCopyIcon={false} format="short" />
       <button className="btn btn-sm btn-primary" onClick={() => writeAsync()}>
         Im in it!

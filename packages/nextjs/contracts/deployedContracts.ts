@@ -7,7 +7,7 @@ import { GenericContractsDeclaration } from "~~/utils/scaffold-eth/contract";
 const deployedContracts = {
   31337: {
     SharedExpenses: {
-      address: "0xe7f1725E7734CE288F8367e1Bb143E90bb3F0512",
+      address: "0x68B1D87F95878fE05B998F19b66F4baba5De1aed",
       abi: [
         {
           anonymous: false,
@@ -235,11 +235,6 @@ const deployedContracts = {
               name: "",
               type: "int256[]",
             },
-            {
-              internalType: "address[][]",
-              name: "",
-              type: "address[][]",
-            },
           ],
           stateMutability: "view",
           type: "function",
@@ -269,6 +264,11 @@ const deployedContracts = {
               name: "",
               type: "int256",
             },
+            {
+              internalType: "bool",
+              name: "",
+              type: "bool",
+            },
           ],
           stateMutability: "view",
           type: "function",
@@ -297,6 +297,30 @@ const deployedContracts = {
               internalType: "address[]",
               name: "",
               type: "address[]",
+            },
+          ],
+          stateMutability: "view",
+          type: "function",
+        },
+        {
+          inputs: [
+            {
+              internalType: "uint256",
+              name: "roomId",
+              type: "uint256",
+            },
+            {
+              internalType: "address",
+              name: "participant",
+              type: "address",
+            },
+          ],
+          name: "hasParticipantPaid",
+          outputs: [
+            {
+              internalType: "bool",
+              name: "",
+              type: "bool",
             },
           ],
           stateMutability: "view",

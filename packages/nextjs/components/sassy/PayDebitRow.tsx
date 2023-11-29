@@ -1,27 +1,31 @@
-import React from "react";
+import React, { useState } from "react";
 import { useRouter } from "next/router";
 import { Address } from "../scaffold-eth";
 import { formatEther } from "viem";
 import { useWalletClient } from "wagmi";
-import { useScaffoldContractWrite } from "~~/hooks/scaffold-eth";
+import { useScaffoldContractRead, useScaffoldContractWrite } from "~~/hooks/scaffold-eth";
+import { notification } from "~~/utils/scaffold-eth";
 
 type DebitResponse = {
   debtors: string[];
   amounts: bigint[];
-  creditors: string[][];
 };
 
 type Props = {
-  debtor: string;
-  parsedData: DebitResponse;
-  index: number;
+  debitResponse: DebitResponse;
+  index: number; // Assuming index is passed to identify the specific row
 };
 
-const PayDebitRow = (props: Props) => {
+const PayDebitRow = ({ debitResponse, index }: Props) => {
   const router = useRouter();
-  const room_id: string = router.query.id ? router.query.id[0] : "2";
+  const room_id = router.query.id ? router.query.id.toString() : "2";
   const { data } = useWalletClient();
-  const currentAddress = data?.account.address ? data?.account.address : "0";
+  const currentAddress = data?.account?.address || "0";
+  const [hasPayed, setHasPayed] = useState<boolean | null>(null);
+
+  const { debtors, amounts } = debitResponse;
+  const debtor = debtors[index];
+  const amount = amounts[index];
 
   function absBigInt(value: bigint): bigint {
     return value < 0n ? -value : value;
@@ -31,28 +35,36 @@ const PayDebitRow = (props: Props) => {
     contractName: "SharedExpenses",
     functionName: "payDebt",
     args: [BigInt(room_id)],
-    value: absBigInt(props.parsedData.amounts[props.index]),
+    value: absBigInt(amount),
   });
+
+  useScaffoldContractRead({
+    contractName: "SharedExpenses",
+    functionName: "hasParticipantPaid",
+    args: [BigInt(room_id), debtor],
+    onSuccess: async (data: any) => {
+      setHasPayed(parseParticipantHasPayed(data));
+    },
+    onError: async e => {
+      notification.error(e.message);
+    },
+  });
+
+  if (!debitResponse) {
+    return null; // Return null for no render if there is no debitResponse
+  }
 
   return (
     <tr>
       <td>
-        <Address size="sm" address={props.debtor} />
+        <Address size="sm" address={debtor} />
       </td>
-      <td>{formatEther(props.parsedData.amounts[props.index], "wei").substring(0, 6)}</td>
+      <td>{formatEther(amount, "wei").substring(0, 6).toString()}</td>
       <td>
-        {props.parsedData.creditors[props.index].map(creditor => (
-          <Address key={creditor} size="sm" address={creditor} />
-        ))}
-      </td>
-      <td>
-        {props.debtor == currentAddress && (
-          <button
-            onClick={() => {
-              writeAsync();
-            }}
-            className="btn btn-sm btn-primary"
-          >
+        {hasPayed ? "Payed!" : "Not payed"}
+
+        {!hasPayed && debtor === currentAddress && (
+          <button onClick={() => writeAsync()} className="btn btn-sm btn-primary">
             Pay debt!
           </button>
         )}
@@ -60,5 +72,14 @@ const PayDebitRow = (props: Props) => {
     </tr>
   );
 };
+
+function parseParticipantHasPayed(input: any): boolean | null {
+  console.log(input);
+  if (typeof input === "boolean") {
+    const hasPayed = input;
+    return hasPayed;
+  }
+  return null;
+}
 
 export default PayDebitRow;
